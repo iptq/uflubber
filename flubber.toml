@@ -1,0 +1,14 @@
+[plugins.irc]
+path = "target/debug/irc-plugin"
+
+    # [plugins.irc.config]
+    # host = "acm.umn.edu"
+    # nick = "flubber"
+    # port = 6669
+    # ssl = true
+
+    [plugins.irc.config]
+    host = "chat.freenode.net"
+    nick = "flubber"
+    port = 6697
+    ssl = true
