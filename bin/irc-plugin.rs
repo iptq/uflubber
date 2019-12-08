@@ -4,12 +4,19 @@ extern crate anyhow;
 use std::path::PathBuf;
 
 use anyhow::Result;
+use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use irc_async::{Client, Config as IrcConfig};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value as JsonValue};
 use structopt::StructOpt;
-use tokio::{fs::File, io::AsyncReadExt};
-use toml::Value;
+use tokio::{
+    fs::File,
+    io::{self, AsyncReadExt},
+};
+use tokio_serde::{formats::Json, Framed};
+use tokio_util::codec::{BytesCodec, FramedWrite};
+use toml::Value as TomlValue;
 
 #[derive(Debug, StructOpt)]
 struct Args {
@@ -43,7 +50,7 @@ impl From<&Config> for IrcConfig {
 async fn main() -> Result<()> {
     let args = Args::from_args();
 
-    let config: Value = {
+    let config: TomlValue = {
         let mut config_file = File::open(&args.config_path).await?;
         let mut contents = String::new();
         config_file.read_to_string(&mut contents).await?;
@@ -62,14 +69,23 @@ async fn main() -> Result<()> {
     let irc_config = IrcConfig::from(&plugin_config);
 
     let (mut client, fut) = Client::with_config(irc_config).await?;
+    client.register().await?;
+
     tokio::spawn(fut);
 
     // main loop
+    let mut stdout = Framed::<_, JsonValue, JsonValue, _>::new(
+        FramedWrite::new(io::stdout(), BytesCodec::new()),
+        Json::<JsonValue, JsonValue>::default(),
+    );
     async {
         while let Some(Ok(message)) = client.next().await {
-            eprintln!("message: {:?}", message);
+            // println!("message: {:?}", message);
+            // println!("{{}}");
+            stdout.send(json!({ "a": "b" })).await;
         }
-    }.await;
+    }
+        .await;
 
     Ok(())
 }

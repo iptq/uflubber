@@ -2,13 +2,23 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::Stdio;
 
+use anyhow::Error;
+use anyhow::Result;
 use futures::future::{self, FutureExt};
 use futures::stream::StreamExt;
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
-use tokio::{self, fs::File, io::AsyncReadExt, process::Command};
 use serde_json::Value;
+use structopt::StructOpt;
+use tokio::{
+    self,
+    fs::File,
+    io::{self, AsyncReadExt},
+    net::TcpListener,
+    process::Command,
+    sync::mpsc,
+};
+use tokio_serde::{formats::Json, Framed};
+use tokio_util::codec::{BytesCodec, FramedRead};
 
 use uflubber::JsonCodec;
 
@@ -20,6 +30,8 @@ struct Args {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
+    bind_host: String,
+    bind_port: u16,
     plugins: BTreeMap<String, PluginConfig>,
 }
 
@@ -28,8 +40,10 @@ struct PluginConfig {
     path: PathBuf,
 }
 
-struct Server {
+struct Backend {}
 
+struct Server {
+    backends: BTreeMap<String, Backend>,
 }
 
 #[tokio::main]
@@ -43,26 +57,50 @@ async fn main() -> Result<()> {
         toml::from_str(&contents)?
     };
 
-    let server = Server {};
+    let mut server = Server {
+        backends: BTreeMap::new(),
+    };
 
-    let mut futures = Vec::new();
     for (name, plugin) in config.plugins.iter() {
         let mut cmd = Command::new(&plugin.path);
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
         cmd.arg("--config")
             .arg(args.config_path.as_os_str())
             .arg("--plugin-name")
-            .arg(&name);
+            .arg(&name)
+            .env("RUST_BACKTRACE", "1");
         println!("spawning {}: {:?}", name, plugin);
 
         let mut child = cmd.spawn()?;
         let input = child.stdin().take().unwrap();
         let output = child.stdout().take().unwrap();
 
-        futures.push(child);
+        let mut stdout = Framed::<_, Value, Value, _>::new(
+            FramedRead::new(output, BytesCodec::new()),
+            Json::<Value, Value>::default(),
+        );
+        tokio::spawn(stdout.for_each(|message| {
+            async move {
+                println!("json: {:?}", message);
+            }
+        }));
+
+        let backend = Backend {};
+        server.backends.insert(name.clone(), backend);
+
+        tokio::spawn(child);
     }
 
-    tokio::spawn(future::join_all(futures));
+    // listen for clients
+    let mut listener = TcpListener::bind((config.bind_host.as_ref(), config.bind_port)).await?;
+    let client_loop = async move {
+        loop {
+            let (socket, _) = listener.accept().await?;
+            println!("ACCEPTED");
+        }
+        Ok::<_, Error>(())
+    };
+    tokio::spawn(client_loop);
 
     // Ok(future::join_all(futures).map(|_| ()).await)
     Ok(future::pending().await)
