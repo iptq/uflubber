@@ -4,23 +4,16 @@ use std::process::Stdio;
 
 use anyhow::Error;
 use anyhow::Result;
-use futures::future::{self, FutureExt};
-use futures::stream::StreamExt;
+use futures::{
+    future::{self},
+    stream::StreamExt,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use structopt::StructOpt;
-use tokio::{
-    self,
-    fs::File,
-    io::{self, AsyncReadExt},
-    net::TcpListener,
-    process::Command,
-    sync::mpsc,
-};
+use tokio::{self, fs::File, io::AsyncReadExt, net::TcpListener, process::Command};
 use tokio_serde::{formats::Json, Framed};
 use tokio_util::codec::{BytesCodec, FramedRead};
-
-use uflubber::JsonCodec;
 
 #[derive(Debug, StructOpt)]
 struct Args {
@@ -75,7 +68,7 @@ async fn main() -> Result<()> {
         let input = child.stdin().take().unwrap();
         let output = child.stdout().take().unwrap();
 
-        let mut stdout = Framed::<_, Value, Value, _>::new(
+        let stdout = Framed::<_, Value, Value, _>::new(
             FramedRead::new(output, BytesCodec::new()),
             Json::<Value, Value>::default(),
         );
@@ -98,6 +91,8 @@ async fn main() -> Result<()> {
             let (socket, _) = listener.accept().await?;
             println!("ACCEPTED");
         }
+
+        #[allow(unreachable_code)]
         Ok::<_, Error>(())
     };
     tokio::spawn(client_loop);
