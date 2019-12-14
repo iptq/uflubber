@@ -80,9 +80,13 @@ async fn main() -> Result<()> {
     );
     async {
         while let Some(Ok(message)) = client.next().await {
-            // println!("message: {:?}", message);
-            // println!("{{}}");
-            stdout.send(json!({ "a": "b" })).await;
+            let flubber_message = match message {
+                
+                _ => None,
+            };
+            if let Some(message) = flubber_message {
+                stdout.send(json!({ "message": format!("{:?}", message) })).await;
+            }
         }
     }
         .await;

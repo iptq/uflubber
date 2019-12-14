@@ -6,9 +6,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-irc-async = { version = "0.1", path = "../../irc-async" }
+irc-async = { version = "0.1", path = "../irc-async" }
 futures = "0.3"
-tokio = { version = "0.2", features = [] }
+tokio = { version = "0.2", features = ["fs", "io-std", "io-util"] }
 structopt = "0.3"
 tokio-serde = { version = "0.6", features = ["json"] }
 tokio-util = { version = "0.2", features = ["codec"] }

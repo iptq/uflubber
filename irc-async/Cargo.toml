@@ -1,0 +1,16 @@
+[package]
+name = "irc-async"
+version = "0.1.0"
+authors = ["Michael Zhang <iptq@protonmail.com>"]
+description = "async irc library"
+edition = "2018"
+license = "MPL-2.0"
+
+[dependencies]
+thiserror = "1.0"
+bytes = "0.5"
+futures = "0.3"
+tokio = { version = "0.2", features = ["tcp", "macros"] }
+tokio-tls = "0.3"
+tokio-util = { version = "0.2", features = ["codec"] }
+native-tls = "0.2"

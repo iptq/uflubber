@@ -1,0 +1,1 @@
+license: https://github.com/aatxe/irc/blob/develop/LICENSE.md

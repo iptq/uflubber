@@ -1,3 +1,9 @@
+#[macro_use]
+extern crate serde;
+
+mod config;
+mod client;
+
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -8,12 +14,14 @@ use futures::{
     future::{self},
     stream::StreamExt,
 };
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use structopt::StructOpt;
 use tokio::{self, fs::File, io::AsyncReadExt, net::TcpListener, process::Command};
 use tokio_serde::{formats::Json, Framed};
 use tokio_util::codec::{BytesCodec, FramedRead};
+
+use crate::config::Config;
+use crate::client::Client;
 
 #[derive(Debug, StructOpt)]
 struct Args {
@@ -21,19 +29,8 @@ struct Args {
     config_path: PathBuf,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Config {
-    bind_host: String,
-    bind_port: u16,
-    plugins: BTreeMap<String, PluginConfig>,
+struct Backend {
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-struct PluginConfig {
-    path: PathBuf,
-}
-
-struct Backend {}
 
 struct Server {
     backends: BTreeMap<String, Backend>,
@@ -97,6 +94,5 @@ async fn main() -> Result<()> {
     };
     tokio::spawn(client_loop);
 
-    // Ok(future::join_all(futures).map(|_| ()).await)
     Ok(future::pending().await)
 }

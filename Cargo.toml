@@ -5,6 +5,12 @@ authors = ["Michael Zhang <iptq@protonmail.com>"]
 edition = "2018"
 
 [workspace]
-members = ["proto", "server", "irc-plugin", "client-gtk"]
+members = [
+    "client-gtk",
+    "irc-async",
+    "irc-backend",
+    "proto",
+    "server",
+]
 
 [dependencies]
