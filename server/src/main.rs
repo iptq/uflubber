@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate serde;
 
-mod config;
 mod client;
+mod config;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -14,14 +14,15 @@ use futures::{
     future::{self},
     stream::StreamExt,
 };
+use rusqlite::Connection;
 use serde_json::Value;
 use structopt::StructOpt;
 use tokio::{self, fs::File, io::AsyncReadExt, net::TcpListener, process::Command};
 use tokio_serde::{formats::Json, Framed};
 use tokio_util::codec::{BytesCodec, FramedRead};
 
-use crate::config::Config;
 use crate::client::Client;
+use crate::config::Config;
 
 #[derive(Debug, StructOpt)]
 struct Args {
@@ -29,8 +30,7 @@ struct Args {
     config_path: PathBuf,
 }
 
-struct Backend {
-}
+struct Backend {}
 
 struct Server {
     backends: BTreeMap<String, Backend>,
@@ -47,19 +47,20 @@ async fn main() -> Result<()> {
         toml::from_str(&contents)?
     };
 
+    let conn = Connection::open_in_memory()?;
     let mut server = Server {
         backends: BTreeMap::new(),
     };
 
-    for (name, plugin) in config.plugins.iter() {
-        let mut cmd = Command::new(&plugin.path);
+    for (name, backend) in config.backends.iter() {
+        let mut cmd = Command::new(&backend.path);
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
         cmd.arg("--config")
             .arg(args.config_path.as_os_str())
-            .arg("--plugin-name")
+            .arg("--backend-name")
             .arg(&name)
             .env("RUST_BACKTRACE", "1");
-        println!("spawning {}: {:?}", name, plugin);
+        println!("spawning {}: {:?}", name, backend);
 
         let mut child = cmd.spawn()?;
         let input = child.stdin().take().unwrap();
@@ -71,7 +72,10 @@ async fn main() -> Result<()> {
         );
         tokio::spawn(stdout.for_each(|message| {
             async move {
-                println!("json: {:?}", message);
+                match message {
+                    Ok(message) => println!("json: {}", message),
+                    Err(err) => eprintln!("error: {}", err),
+                }
             }
         }));
 

@@ -1,16 +1,10 @@
 bind_host = "127.0.0.1"
 bind_port = 3867
 
-[plugins.irc]
-path = "target/debug/irc-plugin"
+[backends.freenode]
+path = "target/debug/irc-backend"
 
-    # [plugins.irc.config]
-    # host = "acm.umn.edu"
-    # nick = "flubber"
-    # port = 6669
-    # ssl = true
-
-    [plugins.irc.config]
+    [backends.freenode.config]
     host = "chat.freenode.net"
     nick = "flubber"
     port = 6697

@@ -1,10 +1,8 @@
 [package]
-name = "client-gtk"
+name = "client-tui"
 version = "0.1.0"
 authors = ["Michael Zhang <iptq@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-gtk = "0.6"
-relm = "0.16"
-relm-derive = "0.16"
+termion = "1.5"

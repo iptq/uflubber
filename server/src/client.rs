@@ -1,2 +1,5 @@
-pub struct Client {
+pub struct Client {}
+
+impl Client {
+    pub fn subscribe(&self) {}
 }

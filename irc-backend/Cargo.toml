@@ -1,17 +1,22 @@
 [package]
-name = "irc-plugin"
+name = "irc-backend"
 version = "0.1.0"
 authors = ["Michael Zhang <iptq@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-irc-async = { version = "0.1", path = "../irc-async" }
+chrono = "0.4"
 futures = "0.3"
-tokio = { version = "0.2", features = ["fs", "io-std", "io-util"] }
+irc-async = { version = "0.1", path = "../irc-async" }
+lazy_static = "1.4"
+parking_lot = "0.10.0"
+proto = { path = "../proto" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 structopt = "0.3"
+tokio = { version = "0.2", features = ["fs", "io-std", "io-util"] }
 tokio-serde = { version = "0.6", features = ["json"] }
 tokio-util = { version = "0.2", features = ["codec"] }
 toml = "0.5"
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "0.8", features = ["v4"] }

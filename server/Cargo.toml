@@ -14,3 +14,4 @@ tokio = { version = "0.2", features = ["dns", "fs", "io-std", "io-util", "macros
 tokio-serde = { version = "0.6", features = ["json"] }
 tokio-util = { version = "0.2", features = ["codec"] }
 toml = "0.5"
+rusqlite = "0.21"

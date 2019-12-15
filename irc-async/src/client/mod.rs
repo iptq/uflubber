@@ -49,7 +49,7 @@ type Result<T> = std::result::Result<T, ClientError>;
 /// An async IRC client
 pub struct Client {
     config: Config,
-    stream: Pin<Box<dyn Stream<Item = Result<Message>>>>,
+    stream: Pin<Box<dyn Stream<Item = Result<Message>> + Send>>,
     tx: UnboundedSender<Message>,
 }
 
@@ -57,7 +57,9 @@ pub type ClientFuture = Pin<Box<dyn Future<Output = Result<()>> + Send>>;
 
 impl Client {
     /// Create a new client with the specified config
-    pub async fn with_config(config: Config) -> Result<(Self, ClientFuture)> {
+    pub async fn with_config(
+        config: Config,
+    ) -> Result<(Self, ClientFuture, UnboundedSender<Message>)> {
         let mut addrs = (config.host.as_ref(), config.port).to_socket_addrs()?;
         let stream = TcpStream::connect(addrs.next().unwrap()).await?;
 
@@ -108,9 +110,9 @@ impl Client {
         let client = Client {
             config,
             stream: stream.boxed(),
-            tx,
+            tx: tx.clone(),
         };
-        Ok((client, fut))
+        Ok((client, fut, tx))
     }
 
     /// Send the client registration information to the server
