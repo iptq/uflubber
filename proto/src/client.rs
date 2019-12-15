@@ -1,3 +1,5 @@
+use crate::backend::{RoomID, NewMessage};
+
 pub enum Update {}
 
 pub struct Request {
@@ -5,4 +7,7 @@ pub struct Request {
     pub body: RequestBody,
 }
 
-pub enum RequestBody {}
+pub enum RequestBody {
+    RoomJoin(RoomID),
+    MessageSend(NewMessage),
+}

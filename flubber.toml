@@ -6,6 +6,6 @@ path = "target/debug/irc-backend"
 
     [backends.freenode.config]
     host = "chat.freenode.net"
-    nick = "flubber"
+    nick = "flubber1"
     port = 6697
     ssl = true

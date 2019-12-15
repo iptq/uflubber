@@ -17,8 +17,8 @@ use irc_async::{
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use proto::backend::{
-    Message, MessageContent, MessageID, Request, RequestBody, Room, RoomID, RoomIDOrUserID, Update,
-    UserID,
+    InitInfo, Message, MessageContent, MessageID, Request, RequestBody, Room, RoomID,
+    RoomIDOrUserID, Update, UserID, Version,
 };
 use serde_json::Value as JsonValue;
 use structopt::StructOpt;
@@ -56,6 +56,25 @@ async fn main() -> Result<()> {
         config_file.read_to_string(&mut contents).await?;
         toml::from_str(&contents)?
     };
+
+    let mut stdout = Framed::<_, JsonValue, JsonValue, _>::new(
+        FramedWrite::new(io::stdout(), BytesCodec::new()),
+        Json::<JsonValue, JsonValue>::default(),
+    );
+    stdout
+        .send(
+            serde_json::to_value(InitInfo {
+                backend_name: env!("CARGO_PKG_NAME").to_string(),
+                backend_version: Version(
+                    env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+                    env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+                    env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+                ),
+                protocol_version: Version(0, 1, 0),
+            })
+            .unwrap(),
+        )
+        .await;
 
     let backend_config = config
         .get("backends")
@@ -97,10 +116,6 @@ async fn main() -> Result<()> {
     tokio::spawn(stdin_loop);
 
     // main loop
-    let mut stdout = Framed::<_, JsonValue, JsonValue, _>::new(
-        FramedWrite::new(io::stdout(), BytesCodec::new()),
-        Json::<JsonValue, JsonValue>::default(),
-    );
     async {
         while let Some(Ok(message)) = client.next().await {
             let flubber_message = match message.command {

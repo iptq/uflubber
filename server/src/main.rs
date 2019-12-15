@@ -14,8 +14,9 @@ use futures::{
     future::{self},
     stream::StreamExt,
 };
+use proto::backend::InitInfo;
 use rusqlite::Connection;
-use serde_json::Value;
+use serde_json::Value as JsonValue;
 use structopt::StructOpt;
 use tokio::{self, fs::File, io::AsyncReadExt, net::TcpListener, process::Command};
 use tokio_serde::{formats::Json, Framed};
@@ -60,16 +61,24 @@ async fn main() -> Result<()> {
             .arg("--backend-name")
             .arg(&name)
             .env("RUST_BACKTRACE", "1");
-        println!("spawning {}: {:?}", name, backend);
+        println!("spawning {}: {:?}", name, cmd);
 
         let mut child = cmd.spawn()?;
         let input = child.stdin().take().unwrap();
         let output = child.stdout().take().unwrap();
 
-        let stdout = Framed::<_, Value, Value, _>::new(
+        let mut stdout = Framed::<_, JsonValue, JsonValue, _>::new(
             FramedRead::new(output, BytesCodec::new()),
-            Json::<Value, Value>::default(),
+            Json::<JsonValue, JsonValue>::default(),
         );
+        let init: InitInfo = match stdout.next().await {
+            Some(Ok(value)) => serde_json::from_value(value).unwrap(),
+            _ => {
+                eprintln!("invalid backend, did not send init info");
+                continue;
+            }
+        };
+        eprintln!("backend init: {:?}", init);
         tokio::spawn(stdout.for_each(|message| {
             async move {
                 match message {
